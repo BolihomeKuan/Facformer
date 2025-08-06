@@ -1,0 +1,43 @@
+{% extends 'fish_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'fish_app:index' %}">Home</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'fish_app:storage_detail' storage.id %}">
+                    Storage at {{ storage.temperature }}°C
+                </a>
+            </li>
+            <li class="breadcrumb-item active">Bulk Add Feature Data</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">Bulk Add Feature Data</h3>
+        </div>
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                <div class="mb-3">
+                    {{ form.bulk_data.label_tag }}
+                    {{ form.bulk_data }}
+                    <div class="form-text">{{ form.bulk_data.help_text }}</div>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Add Data
+                    </button>
+                    <a href="{% url 'fish_app:storage_detail' storage.id %}" 
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

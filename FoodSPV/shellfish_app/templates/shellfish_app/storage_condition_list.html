@@ -1,0 +1,68 @@
+{% extends 'shellfish_app/base.html' %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'shellfish_app:index' %}">Home</a>
+            </li>
+            <li class="breadcrumb-item active">Storage Conditions</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">Storage Conditions</h3>
+            {% if user.is_staff %}
+            <a href="{% url 'shellfish_app:storage_condition_create' %}" 
+               class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Add New Condition
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="card-body">
+            <div class="row g-4">
+                {% for condition in storage_conditions %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ condition.shellfish_species.name }}</h5>
+                            <p class="card-text">
+                                <i class="bi bi-thermometer-half me-2" style="color: #4A4A4A;"></i>
+                                <span style="color: #2C2C2C;">Temperature: {{ condition.temperature }}°C</span>
+                            </p>
+                            <p class="card-text">
+                                <i class="bi bi-moisture me-2" style="color: #4A4A4A;"></i>
+                                <span style="color: #2C2C2C;">Humidity: {{ condition.humidity }}%</span>
+                            </p>
+                            {% if user.is_staff %}
+                            <div class="mt-3">
+                                <a href="{% url 'shellfish_app:storage_condition_update' condition.id %}" 
+                                   class="btn btn-sm me-2"
+                                   style="background-color: #EAE6DA; color: #2C2C2C; border: 1px solid #E8E8E0;">
+                                    <i class="bi bi-pencil me-1"></i>Edit
+                                </a>
+                                <a href="{% url 'shellfish_app:storage_condition_delete' condition.id %}" 
+                                   class="btn btn-sm"
+                                   style="background-color: #F5F5F0; color: #2C2C2C; border: 1px solid #E8E8E0;">
+                                    <i class="bi bi-trash me-1"></i>Delete
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert" style="background-color: #F5F5F0; border: 1px solid #E8E8E0; color: #2C2C2C;">
+                        <i class="bi bi-info-circle me-2"></i>No storage conditions found.
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

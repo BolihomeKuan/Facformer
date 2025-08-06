@@ -1,0 +1,108 @@
+{% extends 'shellfish_app/base.html' %}
+
+{% block title %}Import Data{% endblock %}
+
+{% block header %}
+<div class="page-header">
+    <div class="container">
+        <h1 class="display-5">Import Data</h1>
+        <p class="lead">Import data from Excel or CSV files</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container" lang="en">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <h5>Import Instructions</h5>
+                            <ul class="text-muted">
+                                <li>File must be in Excel (.xlsx) or CSV format</li>
+                                <li>First row should contain column headers</li>
+                                <li>Required columns: Species, Temperature, Feature, Value, Day</li>
+                                <li>Optional columns: Scientific Name, Notes</li>
+                            </ul>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_file" class="form-label">Data File</label>
+                            <div class="custom-file">
+                                <input type="file" name="file" class="form-control" id="id_file" 
+                                       accept=".xlsx,.csv" required style="display: none;">
+                                <label class="custom-file-upload w-100" for="id_file">
+                                    <i class="bi bi-cloud-upload me-2"></i>Choose Data File
+                                    <span id="file-chosen">No file chosen</span>
+                                </label>
+                            </div>
+                            <div class="invalid-feedback">
+                                Please select a file to import.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_sheet_name" class="form-label">Sheet Name (Excel only)</label>
+                            <input type="text" name="sheet_name" class="form-control" 
+                                   id="id_sheet_name" value="Sheet1">
+                            <div class="form-text">Leave as "Sheet1" if unsure</div>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input type="checkbox" name="skip_errors" class="form-check-input" 
+                                   id="id_skip_errors">
+                            <label class="form-check-label" for="id_skip_errors">
+                                Skip rows with errors
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload me-2"></i>Import Data
+                            </button>
+                            <a href="{% url 'shellfish_app:dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if form.errors %}
+                <div class="alert alert-danger mt-4">
+                    <h5><i class="bi bi-exclamation-triangle me-2"></i>Import Errors</h5>
+                    <ul class="mb-0">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <li>{{ field }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// 表单验证
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+})()
+</script>
+{% endblock %} 

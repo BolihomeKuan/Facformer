@@ -1,0 +1,137 @@
+{% extends 'shellfish_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'shellfish_app:index' %}">Home</a></li>
+            <li class="breadcrumb-item active">Shellfish Species List</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">Shellfish Species</h3>
+            {% if user.is_authenticated %}
+            <a href="{% url 'shellfish_app:add_shellfish' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Add New Shellfish
+            </a>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover custom-table" id="shellfishTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Scientific Name</th>
+                            <th>Sources</th>
+                            <th>Storage Conditions</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for shellfish in shellfish_species %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'shellfish_app:shellfish_detail' shellfish.id %}">{{ shellfish.name }}</a>
+                            </td>
+                            <td>{{ shellfish.scientific_name }}</td>
+                            <td>{{ shellfish.sources.count }}</td>
+                            <td>{{ shellfish.storage_conditions.count }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    {% if user.is_authenticated %}
+                                    <a href="{% url 'shellfish_app:edit_shellfish' shellfish.id %}" 
+                                       class="btn btn-sm btn-warning">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-danger"
+                                            onclick="confirmDeleteShellfish('{{ shellfish.id }}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Total Shellfish Species</h5>
+                    <p class="card-text display-4">{{ shellfish_species.count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Storage Conditions</h5>
+                    <p class="card-text display-4">{{ storage_conditions_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Feature Data Points</h5>
+                    <p class="card-text display-4">{{ feature_data_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    $('#shellfishTable').DataTable({
+        "pageLength": 10,
+        "order": [[0, "asc"]],
+        "language": {
+            "search": "Search fish species:",
+            "lengthMenu": "Show _MENU_ species per page",
+            "info": "Showing _START_ to _END_ of _TOTAL_ shellfish species"
+        }
+    });
+});
+
+function confirmDeleteShellfish(shellfishId) {
+    if (confirm('Are you sure you want to delete this shellfish species? This will also delete all related data.')) {
+        fetch(`/shellfish/${shellfishId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            }
+        });
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

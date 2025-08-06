@@ -1,0 +1,173 @@
+{% extends 'shrimp_app/base.html' %}
+{% load data_filters %}
+
+{% block title %}Advanced Search{% endblock %}
+
+{% block header %}
+<div class="page-header">
+    <div class="container">
+        <h1 class="display-5 text-danger">Advanced Search</h1>
+        <p class="lead">Search with multiple criteria</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Search Criteria</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Shrimp Species</label>
+                            <select name="species" class="form-select">
+                                <option value="">All Species</option>
+                                {% for shrimp in shrimp_species %}
+                                    <option value="{{ shrimp.id }}" 
+                                            {% if search_params.species == shrimp.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ shrimp.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Temperature Range (°C)</label>
+                            <div class="row">
+                                <div class="col">
+                                    <input type="number" step="0.1" name="temp_min" 
+                                           class="form-control" placeholder="Min"
+                                           value="{{ search_params.temp_min }}">
+                                </div>
+                                <div class="col">
+                                    <input type="number" step="0.1" name="temp_max" 
+                                           class="form-control" placeholder="Max"
+                                           value="{{ search_params.temp_max }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Feature Type</label>
+                            <select name="feature_type" class="form-select">
+                                <option value="">All Features</option>
+                                {% for feature in feature_types %}
+                                    <option value="{{ feature.id }}"
+                                            {% if search_params.feature_type == feature.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ feature.name }} ({{ feature.unit }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-search me-2"></i>Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            {% if results %}
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">Search Results</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Shrimp Species</th>
+                                        <th>Temperature</th>
+                                        <th>Feature</th>
+                                        <th>Value</th>
+                                        <th>Day</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for data in results %}
+                                        <tr>
+                                            <td>{{ data.storage_condition.shrimp_species.name }}</td>
+                                            <td>{{ data.storage_condition.temperature }}°C</td>
+                                            <td>{{ data.feature_type.name }}</td>
+                                            <td>{{ data.value|format_float }}</td>
+                                            <td>{{ data.measurement_day }}</td>
+                                            <td>
+                                                <a href="{% url 'shrimp_app:feature_detail' data.storage_condition.id data.feature_type.id %}" 
+                                                   class="btn btn-danger btn-sm">
+                                                    View Details
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% elif search_params %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-info-circle me-2"></i>No results found for your search criteria.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-danger {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-danger:hover {
+    background-color: #CC3333;
+    border-color: #CC3333;
+}
+
+.btn-outline-danger {
+    color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-outline-danger:hover {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+    color: white;
+}
+
+.card-header.bg-danger {
+    background-color: #FF4D4D !important;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #FF4D4D;
+    box-shadow: 0 0 0 0.2rem rgba(255, 77, 77, 0.25);
+}
+
+.text-danger {
+    color: #FF4D4D !important;
+}
+
+.alert-danger {
+    background-color: rgba(255, 77, 77, 0.1);
+    border-color: rgba(255, 77, 77, 0.2);
+    color: #CC3333;
+}
+
+table.table tbody tr:hover {
+    background-color: rgba(255, 77, 77, 0.05);
+}
+</style>
+{% endblock %} 

@@ -1,0 +1,141 @@
+{% extends 'shrimp_app/base.html' %}
+
+{% block title %}Edit Storage Condition{% endblock %}
+
+{% block header %}
+<div class="page-header">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'shrimp_app:index' %}">Home</a></li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'shrimp_app:shrimp_detail' storage.shrimp_species.id %}">
+                        {{ storage.shrimp_species.name }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">Edit Storage Condition</li>
+            </ol>
+        </nav>
+        <h1 class="display-5 text-danger">Edit Storage Condition</h1>
+        <p class="lead">Update storage condition for {{ storage.shrimp_species.name }}</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Storage Details</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_temperature" class="form-label">Temperature (°C)</label>
+                            <input type="number" step="0.1" name="temperature" 
+                                   class="form-control" id="id_temperature" 
+                                   value="{{ storage.temperature }}" required>
+                            <div class="invalid-feedback">
+                                Please provide a temperature value.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_storage_time" class="form-label">Storage Time (Days)</label>
+                            <input type="number" name="storage_time" 
+                                   class="form-control" id="id_storage_time" 
+                                   value="{{ storage.storage_time }}" required>
+                            <div class="invalid-feedback">
+                                Please provide storage time.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_notes" class="form-label">Notes</label>
+                            <textarea name="notes" class="form-control" 
+                                      id="id_notes" rows="3">{{ storage.notes }}</textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-save me-2"></i>Save Changes
+                            </button>
+                            <a href="{% url 'shrimp_app:storage_detail' storage.id %}" 
+                               class="btn btn-outline-danger">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-danger {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-danger:hover {
+    background-color: #CC3333;
+    border-color: #CC3333;
+}
+
+.btn-outline-danger {
+    color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-outline-danger:hover {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+    color: white;
+}
+
+.card-header.bg-danger {
+    background-color: #FF4D4D !important;
+}
+
+.form-control:focus {
+    border-color: #FF4D4D;
+    box-shadow: 0 0 0 0.2rem rgba(255, 77, 77, 0.25);
+}
+
+.text-danger {
+    color: #FF4D4D !important;
+}
+
+.breadcrumb a {
+    color: #FF4D4D;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: #CC3333;
+}
+</style>
+
+<script>
+// 表单验证
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+})()
+</script>
+{% endblock %} 

@@ -1,0 +1,113 @@
+{% extends 'shellfish_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'shellfish_app:index' %}">Home</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'shellfish_app:shellfish_detail' shellfish.id %}">{{ shellfish.name }}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'shellfish_app:shellfish_source_detail' shellfish.id source.id %}">
+                    {{ source.source_code }}
+                </a>
+            </li>
+            <li class="breadcrumb-item active">Edit Source</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">Edit Source Information</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_source_code" class="form-label">Source Code</label>
+                            {{ form.source_code }}
+                            <div class="invalid-feedback">
+                                Please provide a source code.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_source_type" class="form-label">Source Type</label>
+                            {{ form.source_type }}
+                            <div class="invalid-feedback">
+                                Please select a source type.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_source_name" class="form-label">Source Name</label>
+                            {{ form.source_name }}
+                            <div class="invalid-feedback">
+                                Please provide a source name.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="source_date" class="form-label">Source Date</label>
+                            <input type="text" name="source_date" class="form-control flatpickr-input" 
+                                   id="source_date" placeholder="Select date" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Description</label>
+                            {{ form.description }}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-2"></i>Save Changes
+                            </button>
+                            <a href="{% url 'shellfish_app:shellfish_source_detail' shellfish.id source.id %}" 
+                               class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+})()
+
+document.addEventListener('DOMContentLoaded', function() {
+    flatpickr("#source_date", {
+        dateFormat: "Y-m-d",
+        altInput: true,
+        altFormat: "F j, Y",
+        placeholder: "Select date",
+        locale: "default",
+        monthSelectorType: "static",
+        weekNumbers: false,
+        prevArrow: "<i class='bi bi-chevron-left'></i>",
+        nextArrow: "<i class='bi bi-chevron-right'></i>",
+        defaultDate: "{{ source.source_date|date:'Y-m-d' }}"
+    });
+});
+</script>
+{% endblock %}

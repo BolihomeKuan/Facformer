@@ -1,0 +1,127 @@
+{% extends 'shrimp_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-danger">Shrimp Species Database</h1>
+        <div class="btn-group">
+            <a href="?view=card" class="btn btn-outline-danger {% if view_type == 'card' %}active{% endif %}">
+                <i class="bi bi-grid"></i> Card View
+            </a>
+            <a href="?view=table" class="btn btn-outline-danger {% if view_type == 'table' %}active{% endif %}">
+                <i class="bi bi-table"></i> Table View
+            </a>
+        </div>
+    </div>
+
+    {% if view_type == 'card' %}
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {% for shrimp in shrimp_species %}
+            <div class="col">
+                <div class="card h-100">
+                    {% if shrimp.image %}
+                    <img src="{{ shrimp.image.url }}" class="card-img-top" alt="{{ shrimp.name }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ shrimp.name }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{ shrimp.scientific_name }}</h6>
+                        <p class="card-text">{{ shrimp.description|truncatewords:30 }}</p>
+                        <a href="{% url 'shrimp_app:shrimp_detail' shrimp.id %}" class="btn btn-danger">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">Shrimp Species List</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Scientific Name</th>
+                                <th>Description</th>
+                                <th>Image</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shrimp in shrimp_species %}
+                            <tr>
+                                <td>{{ shrimp.name }}</td>
+                                <td>{{ shrimp.scientific_name }}</td>
+                                <td>{{ shrimp.description|truncatewords:20 }}</td>
+                                <td>
+                                    {% if shrimp.image %}
+                                    <img src="{{ shrimp.image.url }}" alt="{{ shrimp.name }}" 
+                                         style="max-height: 50px;">
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'shrimp_app:shrimp_detail' shrimp.id %}" 
+                                       class="btn btn-sm btn-danger">
+                                        View Details
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.btn-danger {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-danger:hover {
+    background-color: #CC3333;
+    border-color: #CC3333;
+}
+
+.btn-outline-danger {
+    color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-outline-danger:hover {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+    color: white;
+}
+
+.card-header.bg-danger {
+    background-color: #FF4D4D !important;
+}
+
+.text-danger {
+    color: #FF4D4D !important;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(255, 77, 77, 0.05);
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(255, 77, 77, 0.1);
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+}
+</style>
+{% endblock %}

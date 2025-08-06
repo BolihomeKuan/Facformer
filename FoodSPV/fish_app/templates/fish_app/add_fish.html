@@ -1,0 +1,88 @@
+{% extends 'fish_app/base.html' %}
+
+{% block title %}Add New Fish Species{% endblock %}
+
+{% block header %}
+<div class="page-header">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'fish_app:index' %}">Home</a></li>
+                <li class="breadcrumb-item active">Add Fish Species</li>
+            </ol>
+        </nav>
+        <h1 class="display-5">Add New Fish Species</h1>
+        <p class="lead">Enter details for a new fish species</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_name" class="form-label">Name</label>
+                            <input type="text" name="name" class="form-control" id="id_name" required>
+                            <div class="invalid-feedback">
+                                Please provide a name.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_scientific_name" class="form-label">Scientific Name</label>
+                            <input type="text" name="scientific_name" class="form-control" id="id_scientific_name">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Description</label>
+                            <textarea name="description" class="form-control" id="id_description" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_image" class="form-label">Image</label>
+                            <div class="custom-file">
+                                <input type="file" 
+                                       name="image" 
+                                       class="form-control" 
+                                       id="id_image" 
+                                       accept="image/*"
+                                       style="display: none;">
+                                <div class="file-upload-wrapper">
+                                    <button type="button" 
+                                            class="btn btn-outline-secondary" 
+                                            onclick="document.getElementById('id_image').click()">
+                                        <i class="bi bi-upload me-2"></i>Choose File
+                                    </button>
+                                    <span class="ms-3 text-muted" id="fileNameDisplay">No file chosen</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>Add Fish Species
+                            </button>
+                            <a href="{% url 'fish_app:index' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('id_image').addEventListener('change', function(e) {
+    var fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
+    document.getElementById('fileNameDisplay').textContent = fileName;
+});
+</script>
+{% endblock %} 

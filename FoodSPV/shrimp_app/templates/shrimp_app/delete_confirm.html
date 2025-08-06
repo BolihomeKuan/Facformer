@@ -1,0 +1,56 @@
+{% extends 'shrimp_app/base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Confirm Deletion</h5>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Are you sure you want to delete "{{ shrimp.name }}"?</h5>
+                    <p class="card-text">This action cannot be undone.</p>
+                    <form action="{% url 'shrimp_app:delete_shrimp' shrimp.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-2"></i>Confirm Delete
+                        </button>
+                        <a href="{% url 'shrimp_app:shrimp_detail' shrimp.id %}" 
+                           class="btn btn-outline-danger">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-danger {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-danger:hover {
+    background-color: #CC3333;
+    border-color: #CC3333;
+}
+
+.btn-outline-danger {
+    color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-outline-danger:hover {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+    color: white;
+}
+
+.card-header.bg-danger {
+    background-color: #FF4D4D !important;
+}
+</style>
+{% endblock %}

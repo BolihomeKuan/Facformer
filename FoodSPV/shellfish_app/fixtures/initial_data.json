@@ -1,0 +1,20 @@
+[
+    {
+        "model": "shellfish_app.shellfishfeaturetype",
+        "pk": 1,
+        "fields": {
+            "name": "TVB-N",
+            "unit": "mg/100g",
+            "description": "Total Volatile Basic Nitrogen"
+        }
+    },
+    {
+        "model": "shellfish_app.shellfishfeaturetype",
+        "pk": 2,
+        "fields": {
+            "name": "pH",
+            "unit": "",
+            "description": "pH value"
+        }
+    }
+] 

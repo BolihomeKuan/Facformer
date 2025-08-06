@@ -1,0 +1,93 @@
+{% extends 'shellfish_app/base.html' %}
+{% load data_filters %}
+
+{% block title %}Bulk Edit{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h4>Bulk Edit Data</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" id="bulkEditForm">
+                {% csrf_token %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll"></th>
+                            <th>Feature</th>
+                            <th>Value</th>
+                            <th>Day</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in feature_data %}
+                            <tr>
+                                <td><input type="checkbox" name="selected_items" value="{{ data.id }}"></td>
+                                <td>{{ data.feature_type.name }}</td>
+                                <td>{{ data.value|format_float }}</td>
+                                <td>{{ data.measurement_day }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="mt-3">
+                    <button type="submit" name="action" value="delete" class="btn btn-danger">
+                        Delete Selected
+                    </button>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#adjustModal">
+                        Adjust Values
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 调整值的模态框 -->
+<div class="modal fade" id="adjustModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adjust Values</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Adjustment Value</label>
+                    <input type="number" class="form-control" id="adjustmentValue" step="0.01">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitAdjustment()">Apply</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 全选功能
+document.getElementById('selectAll').addEventListener('change', function() {
+    document.querySelectorAll('input[name="selected_items"]').forEach(checkbox => {
+        checkbox.checked = this.checked;
+    });
+});
+
+// 提交调整
+function submitAdjustment() {
+    const form = document.getElementById('bulkEditForm');
+    const adjustment = document.getElementById('adjustmentValue').value;
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'adjustment';
+    input.value = adjustment;
+    
+    form.appendChild(input);
+    form.action.value = 'adjust';
+    form.submit();
+}
+</script>
+{% endblock %} 

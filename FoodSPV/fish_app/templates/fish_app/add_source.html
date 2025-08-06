@@ -1,0 +1,110 @@
+{% extends 'fish_app/base.html' %}
+
+{% block title %}Add New Source{% endblock %}
+
+{% block extra_css %}
+<!-- 添加 flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .flatpickr-input {
+        background-color: white !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'fish_app:index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'fish_app:fish_detail' fish.id %}">{{ fish.name }}</a></li>
+            <li class="breadcrumb-item active">Add New Source</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title">Add New Source for {{ fish.name }}</h2>
+            
+            <form method="post" class="mt-4">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="source_code" class="form-label">Source Code</label>
+                    <input type="text" class="form-control" id="source_code" name="source_code" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="source_type" class="form-label">Source Type</label>
+                    <select class="form-select" id="source_type" name="source_type" required>
+                        <option value="" selected disabled>Select source type</option>
+                        <option value="EXPERIMENT">Experimental Test</option>
+                        <option value="LITERATURE">Literature Reference</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="source_name" class="form-label">Source Name</label>
+                    <input type="text" class="form-control" id="source_name" name="source_name" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="source_date" class="form-label">Source Date</label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="source_date" 
+                           name="source_date" 
+                           placeholder="Select Date"
+                           data-input>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="4"></textarea>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Add Source
+                    </button>
+                    <a href="{% url 'fish_app:fish_detail' fish.id %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- 添加 flatpickr JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        flatpickr("#source_date", {
+            dateFormat: "Y-m-d",
+            locale: {
+                firstDayOfWeek: 1,
+                weekdays: {
+                    shorthand: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                    longhand: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+                },
+                months: {
+                    shorthand: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    longhand: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+                },
+                rangeSeparator: " to ",
+                weekAbbreviation: "Wk",
+                scrollTitle: "Scroll to increment",
+                toggleTitle: "Click to toggle",
+                amPM: ["AM", "PM"]
+            },
+            allowInput: true,
+            altInput: true,
+            altFormat: "F j, Y",
+            defaultDate: new Date()
+        });
+    });
+</script>
+{% endblock %}

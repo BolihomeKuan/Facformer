@@ -1,0 +1,108 @@
+{% extends 'shrimp_app/base.html' %}
+
+{% block header %}
+<div class="page-header">
+    <div class="container">
+        <h1 class="display-5 text-danger">{{ title }}</h1>
+        <p class="lead">{{ subtitle|default:'' }}</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">{{ title }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">
+                                    {{ field.label }}
+                                </label>
+                                {{ field.errors }}
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <div class="form-text">{{ field.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-check-lg"></i> {{ submit_text|default:'Submit' }}
+                            </button>
+                            <a href="javascript:history.back()" class="btn btn-outline-danger">
+                                <i class="bi bi-x-lg"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-danger {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-danger:hover {
+    background-color: #CC3333;
+    border-color: #CC3333;
+}
+
+.btn-outline-danger {
+    color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-outline-danger:hover {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+    color: white;
+}
+
+.card-header.bg-danger {
+    background-color: #FF4D4D !important;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #FF4D4D;
+    box-shadow: 0 0 0 0.2rem rgba(255, 77, 77, 0.25);
+}
+
+.text-danger {
+    color: #FF4D4D !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 美化表单字段
+    document.querySelectorAll('input, select, textarea').forEach(function(element) {
+        if (!element.classList.contains('form-check-input')) {
+            element.classList.add('form-control');
+        }
+    });
+
+    // 表单验证
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+});
+</script>
+{% endblock %} 

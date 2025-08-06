@@ -1,0 +1,284 @@
+{% extends 'fish_app/base.html' %}
+{% load data_filters %}
+
+{% block title %}Dashboard - Fish Storage Life{% endblock %}
+
+{% block header %}
+<div class="page-header bg-primary text-white py-4 mb-4">
+    <div class="container">
+        <h1 class="display-4">Dashboard</h1>
+        <p class="lead mb-0">Overview of Fish Storage Life Data</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- 统计卡片 -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-wrapper bg-primary-subtle rounded-circle mb-3">
+                    <i class="bi bi-fish display-5"></i>
+                </div>
+                <div class="number">{{ total_species }}</div>
+                <div class="text-muted">Fish Species</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-wrapper bg-success-subtle rounded-circle mb-3">
+                    <i class="bi bi-thermometer-half display-5"></i>
+                </div>
+                <div class="number">{{ total_conditions }}</div>
+                <div class="text-muted">Storage Conditions</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-wrapper bg-info-subtle rounded-circle mb-3">
+                    <i class="bi bi-graph-up display-5"></i>
+                </div>
+                <div class="number">{{ total_measurements }}</div>
+                <div class="text-muted">Measurements</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-wrapper bg-warning-subtle rounded-circle mb-3">
+                    <i class="bi bi-clipboard-data display-5"></i>
+                </div>
+                <div class="number">{{ feature_types_count }}</div>
+                <div class="text-muted">Feature Types</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- 左侧图表 -->
+        <div class="col-lg-8">
+            <div class="row g-4">
+                <!-- 温度分布图 -->
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Temperature Distribution</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="temperatureChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 特征类型分布图 -->
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Feature Types Distribution</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="featureTypesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 鱼类数据分布图 -->
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Fish Species Data Distribution</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="fishSpeciesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧最近活动 -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Activities</h5>
+                    <span class="badge bg-primary">Last 5 Updates</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for activity in recent_activities %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ activity.species }}</h6>
+                                <small class="text-muted">{{ activity.date|date:"Y-m-d H:i" }}</small>
+                            </div>
+                            <p class="mb-1 text-muted small">{{ activity.description }}</p>
+                        </div>
+                        {% empty %}
+                        <div class="list-group-item text-center text-muted">
+                            No recent activities
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    height: 100%;
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+}
+
+.stat-card .icon-wrapper {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.stat-card .number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #0d6efd;
+    margin: 0.5rem 0;
+}
+
+.stat-card .text-muted {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    padding: 1rem 1.25rem;
+}
+
+.list-group-item {
+    padding: 1rem 1.25rem;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Temperature Distribution Chart
+const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+new Chart(tempCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ temp_labels|to_json|safe }},
+        datasets: [{
+            label: 'Storage Conditions',
+            data: {{ temp_data|to_json|safe }},
+            backgroundColor: 'rgba(13, 110, 253, 0.6)',
+            borderColor: 'rgba(13, 110, 253, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Count'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Temperature (°C)'
+                }
+            }
+        }
+    }
+});
+
+// Feature Types Distribution Chart
+const featureCtx = document.getElementById('featureTypesChart').getContext('2d');
+new Chart(featureCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ feature_labels|to_json|safe }},
+        datasets: [{
+            data: {{ feature_data|to_json|safe }},
+            backgroundColor: [
+                'rgba(13, 110, 253, 0.6)',
+                'rgba(25, 135, 84, 0.6)',
+                'rgba(13, 202, 240, 0.6)',
+                'rgba(255, 193, 7, 0.6)',
+                'rgba(220, 53, 69, 0.6)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'right'
+            }
+        }
+    }
+});
+
+// Fish Species Distribution Chart
+const fishCtx = document.getElementById('fishSpeciesChart').getContext('2d');
+new Chart(fishCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ fish_labels|to_json|safe }},
+        datasets: [{
+            label: 'Measurements',
+            data: {{ fish_data|to_json|safe }},
+            backgroundColor: 'rgba(13, 110, 253, 0.6)',
+            borderColor: 'rgba(13, 110, 253, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Number of Measurements'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Fish Species'
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends 'shrimp_app/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-danger">Storage Conditions</h2>
+        {% if user.is_staff %}
+        <a href="{% url 'shrimp_app:storage_condition_create' %}" class="btn btn-danger">
+            <i class="bi bi-plus-lg me-2"></i>Add New Condition
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="row g-4">
+        {% for condition in storage_conditions %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">{{ condition.shrimp_species.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        <i class="bi bi-thermometer-half me-2"></i>
+                        Temperature: {{ condition.temperature }}°C
+                    </p>
+                    <p class="card-text">
+                        <i class="bi bi-moisture me-2"></i>
+                        Humidity: {{ condition.humidity }}%
+                    </p>
+                    {% if user.is_staff %}
+                    <div class="mt-3">
+                        <a href="{% url 'shrimp_app:storage_condition_update' condition.id %}" 
+                           class="btn btn-sm btn-danger me-2">
+                            <i class="bi bi-pencil me-1"></i>Edit
+                        </a>
+                        <a href="{% url 'shrimp_app:storage_condition_delete' condition.id %}" 
+                           class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash me-1"></i>Delete
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-danger">
+                <i class="bi bi-info-circle me-2"></i>No storage conditions found.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.btn-danger {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-danger:hover {
+    background-color: #CC3333;
+    border-color: #CC3333;
+}
+
+.btn-outline-danger {
+    color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-outline-danger:hover {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+    color: white;
+}
+
+.card-header.bg-danger {
+    background-color: #FF4D4D !important;
+}
+
+.text-danger {
+    color: #FF4D4D !important;
+}
+
+.alert-danger {
+    background-color: rgba(255, 77, 77, 0.1);
+    border-color: rgba(255, 77, 77, 0.2);
+    color: #CC3333;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(255, 77, 77, 0.1);
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+}
+</style>
+{% endblock %} 

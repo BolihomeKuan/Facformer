@@ -1,0 +1,77 @@
+{% extends 'shellfish_app/base.html' %}
+
+{% block header %}
+<div class="page-header">
+    <div class="container">
+        <h1 class="display-5">{{ title }}</h1>
+        <p class="lead text-muted">{{ subtitle|default:'' }}</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label" style="color: #2C2C2C;">
+                                    {{ field.label }}
+                                </label>
+                                {{ field.errors }}
+                                <div class="field-wrapper" style="margin-bottom: 0.5rem;">
+                                    {{ field }}
+                                </div>
+                                {% if field.help_text %}
+                                    <div class="form-text" style="color: #4A4A4A;">{{ field.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn" 
+                                    style="background-color: #EAE6DA; color: #2C2C2C; border: 1px solid #E8E8E0;">
+                                <i class="bi bi-check-lg"></i> {{ submit_text|default:'Submit' }}
+                            </button>
+                            <a href="javascript:history.back()" class="btn" 
+                               style="background-color: #F5F5F0; color: #2C2C2C; border: 1px solid #E8E8E0;">
+                                <i class="bi bi-x-lg"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 美化表单字段
+    var formElements = document.querySelectorAll('input, select, textarea');
+    formElements.forEach(function(element) {
+        if (!element.classList.contains('form-check-input')) {
+            element.classList.add('form-control');
+            element.style.backgroundColor = '#FFFFFF';
+            element.style.border = '1px solid #E8E8E0';
+            element.style.color = '#2C2C2C';
+        }
+    });
+
+    // 表单验证
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+});
+</script>
+{% endblock %} 

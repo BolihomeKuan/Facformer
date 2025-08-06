@@ -1,0 +1,21 @@
+{% extends 'fish_app/base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Are you sure you want to delete "{{ fish.name }}"?</h5>
+                    <p class="card-text">This action cannot be undone.</p>
+                    <form action="{% url 'fish_app:delete_fish' fish.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Confirm Delete</button>
+                        <a href="{% url 'fish_app:fish_detail' fish.id %}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends 'shrimp_app/base.html' %}
+
+{% block title %}Add New Source{% endblock %}
+
+{% block extra_css %}
+<!-- Add flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .flatpickr-input {
+        background-color: white !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'shrimp_app:index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'shrimp_app:shrimp_detail' shrimp.id %}">{{ shrimp.name }}</a></li>
+            <li class="breadcrumb-item active">Add New Source</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h2 class="card-title mb-0">Add New Source for {{ shrimp.name }}</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" class="mt-4">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="source_code" class="form-label">Source Code</label>
+                    <input type="text" class="form-control" id="source_code" name="source_code" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="source_type" class="form-label">Source Type</label>
+                    <select class="form-select" id="source_type" name="source_type" required>
+                        <option value="" selected disabled>Select source type</option>
+                        <option value="LITERATURE">Literature Reference</option>
+                        <option value="EXPERIMENTAL">Experimental Test</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="source_name" class="form-label">Source Name</label>
+                    <input type="text" class="form-control" id="source_name" name="source_name" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="source_date" class="form-label">Source Date</label>
+                    <input type="text" class="form-control" id="source_date" name="source_date" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-plus-circle me-2"></i>Add Source
+                    </button>
+                    <a href="{% url 'shrimp_app:shrimp_detail' shrimp.id %}" class="btn btn-outline-danger">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-danger {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-danger:hover {
+    background-color: #CC3333;
+    border-color: #CC3333;
+}
+
+.btn-outline-danger {
+    color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-outline-danger:hover {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+    color: white;
+}
+
+.card-header.bg-danger {
+    background-color: #FF4D4D !important;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #FF4D4D;
+    box-shadow: 0 0 0 0.2rem rgba(255, 77, 77, 0.25);
+}
+
+.breadcrumb a {
+    color: #FF4D4D;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: #CC3333;
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Add flatpickr JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        flatpickr("#source_date", {
+            dateFormat: "Y-m-d",
+            defaultDate: new Date(),
+            // ... 其他配置保持不变 ...
+        });
+    });
+</script>
+{% endblock %}

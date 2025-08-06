@@ -1,0 +1,93 @@
+{% extends 'fish_app/base.html' %}
+
+{% block title %}Edit Storage Condition{% endblock %}
+
+{% block header %}
+<div class="page-header">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'fish_app:index' %}">Home</a></li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'fish_app:fish_detail' storage.fish_species.id %}">
+                        {{ storage.fish_species.name }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">Edit Storage Condition</li>
+            </ol>
+        </nav>
+        <h1 class="display-5">Edit Storage Condition</h1>
+        <p class="lead">Update storage condition for {{ storage.fish_species.name }}</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_temperature" class="form-label">Temperature (°C)</label>
+                            <input type="number" step="0.1" name="temperature" 
+                                   class="form-control" id="id_temperature" 
+                                   value="{{ storage.temperature }}" required>
+                            <div class="invalid-feedback">
+                                Please provide a temperature value.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_storage_time" class="form-label">Storage Time (Days)</label>
+                            <input type="number" name="storage_time" 
+                                   class="form-control" id="id_storage_time" 
+                                   value="{{ storage.storage_time }}" required>
+                            <div class="invalid-feedback">
+                                Please provide storage time.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_notes" class="form-label">Notes</label>
+                            <textarea name="notes" class="form-control" 
+                                      id="id_notes" rows="3">{{ storage.notes }}</textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-2"></i>Save Changes
+                            </button>
+                            <a href="{% url 'fish_app:storage_detail' storage.id %}" 
+                               class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 表单验证
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+})()
+</script>
+{% endblock %} 

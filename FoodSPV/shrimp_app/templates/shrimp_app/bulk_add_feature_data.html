@@ -1,0 +1,84 @@
+{% extends 'shrimp_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'shrimp_app:index' %}">Home</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'shrimp_app:storage_detail' storage.id %}">
+                    Storage at {{ storage.temperature }}°C
+                </a>
+            </li>
+            <li class="breadcrumb-item active">Bulk Add Feature Data</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h3 class="mb-0">Bulk Add Feature Data</h3>
+        </div>
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                <div class="mb-3">
+                    {{ form.bulk_data.label_tag }}
+                    {{ form.bulk_data }}
+                    <div class="form-text">{{ form.bulk_data.help_text }}</div>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-plus-circle me-2"></i>Add Data
+                    </button>
+                    <a href="{% url 'shrimp_app:storage_detail' storage.id %}" 
+                       class="btn btn-outline-danger">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-danger {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-danger:hover {
+    background-color: #CC3333;
+    border-color: #CC3333;
+}
+
+.btn-outline-danger {
+    color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-outline-danger:hover {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+    color: white;
+}
+
+.card-header.bg-danger {
+    background-color: #FF4D4D !important;
+}
+
+.form-control:focus {
+    border-color: #FF4D4D;
+    box-shadow: 0 0 0 0.2rem rgba(255, 77, 77, 0.25);
+}
+
+.breadcrumb a {
+    color: #FF4D4D;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: #CC3333;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends 'fish_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'fish_app:index' %}">Home</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'fish_app:fish_detail' storage.fish_species.id %}">
+                    {{ storage.fish_species.name }}
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'fish_app:fish_source_detail' storage.fish_species.id storage.fish_source.id %}">
+                    {{ storage.fish_source.source_code }}
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'fish_app:storage_detail' storage.id %}">Storage Details</a>
+            </li>
+            <li class="breadcrumb-item active">Add Feature Data</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">Add New Feature Data</h3>
+                    <p class="text-muted mb-0">
+                        For {{ storage.fish_species.name }} at {{ storage.temperature }}°C
+                    </p>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_feature_type" class="form-label">Feature Type</label>
+                            {{ form.feature_type }}
+                            <div class="invalid-feedback">
+                                Please select a feature type.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_measurement_day" class="form-label">Measurement Day</label>
+                            {{ form.measurement_day }}
+                            <div class="invalid-feedback">
+                                Please enter a valid measurement day.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_value" class="form-label">Value</label>
+                            {{ form.value }}
+                            <div class="invalid-feedback">
+                                Please enter a valid value.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_notes" class="form-label">Notes</label>
+                            {{ form.notes }}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>Add Feature Data
+                            </button>
+                            <a href="{% url 'fish_app:storage_detail' storage.id %}" 
+                               class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+})()
+</script>
+{% endblock %}

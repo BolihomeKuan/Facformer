@@ -1,0 +1,176 @@
+{% extends 'shrimp_app/base.html' %}
+
+{% block title %}Edit Shrimp Species{% endblock %}
+
+{% block extra_css %}
+<style>
+    .edit-container {
+        max-width: 800px;
+        margin: 2rem auto;
+    }
+
+    .form-card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(255, 77, 77, 0.1);
+        padding: 2rem;
+    }
+
+    .page-title {
+        color: #FF4D4D;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-subtitle {
+        color: #7f8c8d;
+        margin-bottom: 2rem;
+    }
+
+    .form-label {
+        color: #34495e;
+        font-weight: 500;
+    }
+
+    .form-control {
+        border-radius: 6px;
+        border: 1px solid #dde1e3;
+        padding: 0.75rem;
+    }
+
+    .form-control:focus {
+        border-color: #FF4D4D;
+        box-shadow: 0 0 0 0.2rem rgba(255, 77, 77, 0.25);
+    }
+
+    .custom-file-upload {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        cursor: pointer;
+        background-color: #f8f9fa;
+        border: 1px solid #dde1e3;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .custom-file-upload:hover {
+        background-color: #e9ecef;
+    }
+
+    .file-name-display {
+        margin-left: 1rem;
+        color: #6c757d;
+    }
+
+    .current-image-container {
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .current-image {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        border-radius: 6px;
+    }
+
+    .btn-danger {
+        background-color: #FF4D4D;
+        border-color: #FF4D4D;
+    }
+
+    .btn-danger:hover {
+        background-color: #CC3333;
+        border-color: #CC3333;
+    }
+
+    .btn-outline-danger {
+        color: #FF4D4D;
+        border-color: #FF4D4D;
+    }
+
+    .btn-outline-danger:hover {
+        background-color: #FF4D4D;
+        border-color: #FF4D4D;
+        color: white;
+    }
+
+    .action-buttons {
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edit-container">
+    <div class="form-card">
+        <h1 class="page-title">Edit Shrimp Species</h1>
+        <p class="page-subtitle">Update information for shrimp</p>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+                <label class="form-label">Name</label>
+                <input type="text" name="{{ form.name.name }}" value="{{ form.name.value|default:'' }}" class="form-control" id="{{ form.name.id_for_label }}">
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Scientific Name</label>
+                <input type="text" name="{{ form.scientific_name.name }}" value="{{ form.scientific_name.value|default:'' }}" class="form-control" id="{{ form.scientific_name.id_for_label }}">
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Description</label>
+                <textarea name="{{ form.description.name }}" class="form-control" id="{{ form.description.id_for_label }}" rows="4">{{ form.description.value|default:'' }}</textarea>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Image</label>
+                {% if shrimp.image %}
+                <div class="current-image-container">
+                    <img src="{{ shrimp.image.url }}" alt="Current shrimp image" class="current-image">
+                </div>
+                {% endif %}
+                <div class="custom-file">
+                    <input type="file" 
+                           class="custom-file-input" 
+                           id="imageInput" 
+                           name="image" 
+                           accept="image/*"
+                           style="display: none;">
+                    <div class="file-upload-wrapper">
+                        <button type="button" class="btn btn-outline-danger" onclick="document.getElementById('imageInput').click()">
+                            <i class="bi bi-upload me-2"></i>Choose File
+                        </button>
+                        <span class="ms-3 text-muted" id="fileNameDisplay">No file chosen</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons d-grid gap-3">
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-save me-2"></i>Save Changes
+                </button>
+                <a href="{% url 'shrimp_app:shrimp_detail' shrimp.id %}" class="btn btn-outline-danger">
+                    <i class="bi bi-x-circle me-2"></i>Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+        var fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
+        document.getElementById('fileNameDisplay').textContent = fileName;
+    });
+</script>
+{% endblock %}
+{% endblock %} 

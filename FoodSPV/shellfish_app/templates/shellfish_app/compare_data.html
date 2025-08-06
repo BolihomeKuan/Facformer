@@ -1,0 +1,104 @@
+{% extends 'shellfish_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'shellfish_app:index' %}">Home</a></li>
+            <li class="breadcrumb-item active">Compare Data</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">Compare Feature Data</h3>
+        </div>
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="feature_type" class="form-label">Feature Type</label>
+                    <select name="feature_type" id="feature_type" class="form-select" required>
+                        <option value="">Select feature type...</option>
+                        {% for type in feature_types %}
+                        <option value="{{ type.id }}">{{ type.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback">
+                        Please select a feature type.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Select Storage Conditions</label>
+                    <div class="table-responsive">
+                        <table class="table table-hover custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Select</th>
+                                    <th>Shellfish Species</th>
+                                    <th>Temperature</th>
+                                    <th>Storage Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for storage in storage_conditions %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" name="storage_conditions" 
+                                               value="{{ storage.id }}" class="form-check-input">
+                                    </td>
+                                    <td>{{ storage.shellfish_species.name }}</td>
+                                    <td>{{ storage.temperature }}°C</td>
+                                    <td>{{ storage.storage_time }} days</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-graph-up me-2"></i>Compare Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    $('#storageTable').DataTable({
+        "pageLength": 10,
+        "order": [[1, "asc"]],
+        "columnDefs": [
+            { "orderable": false, "targets": 0 }
+        ],
+        "language": {
+            "search": "Search conditions:",
+            "lengthMenu": "Show _MENU_ conditions per page",
+            "info": "Showing _START_ to _END_ of _TOTAL_ storage conditions"
+        }
+    });
+});
+
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+})()
+</script>
+{% endblock %}

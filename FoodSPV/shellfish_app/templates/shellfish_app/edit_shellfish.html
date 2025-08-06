@@ -1,0 +1,104 @@
+{% extends 'shellfish_app/base.html' %}
+
+{% block title %}Edit Shellfish Species{% endblock %}
+
+{% block header %}
+<div class="page-header">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'shellfish_app:index' %}">Home</a></li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'shellfish_app:shellfish_detail' shellfish.id %}">{{ shellfish.name }}</a>
+                </li>
+                <li class="breadcrumb-item active">Edit Shellfish Species</li>
+            </ol>
+        </nav>
+        <h1 class="display-5">Edit Shellfish Species</h1>
+        <p class="lead">Update information for {{ shellfish.name }}</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_name" class="form-label">Name</label>
+                            <input type="text" name="name" class="form-control" 
+                                   id="id_name" value="{{ shellfish.name }}" required>
+                            <div class="invalid-feedback">
+                                Please provide a name.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_scientific_name" class="form-label">Scientific Name</label>
+                            <input type="text" name="scientific_name" class="form-control" 
+                                   id="id_scientific_name" value="{{ shellfish.scientific_name }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Description</label>
+                            <textarea name="description" class="form-control" 
+                                      id="id_description" rows="3">{{ shellfish.description }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_image" class="form-label">Image</label>
+                            {% if shellfish.image %}
+                                <div class="mb-2">
+                                    <img src="{{ shellfish.image.url }}" alt="{{ shellfish.name }}" 
+                                         class="img-thumbnail" style="max-height: 200px;">
+                                </div>
+                            {% endif %}
+                            <div class="custom-file">
+                                <input type="file" name="image" class="form-control" id="id_image" 
+                                       accept="image/*" style="display: none;">
+                                <label class="custom-file-upload w-100" for="id_image">
+                                    <i class="bi bi-cloud-upload me-2"></i>Choose New Image
+                                    <span id="file-chosen">No file chosen</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-2"></i>Save Changes
+                            </button>
+                            <a href="{% url 'shellfish_app:shellfish_detail' shellfish.id %}" 
+                               class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 表单验证
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+})()
+</script>
+{% endblock %} 

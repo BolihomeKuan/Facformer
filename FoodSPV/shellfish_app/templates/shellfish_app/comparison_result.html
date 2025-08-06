@@ -1,0 +1,52 @@
+{% extends 'shellfish_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'shellfish_app:index' %}">Home</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'shellfish_app:statistical_analysis' %}">Analysis</a>
+            </li>
+            <li class="breadcrumb-item active">Comparison Result</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">Comparison Results for {{ feature_type.name }}</h3>
+        </div>
+        <div class="card-body">
+            <div id="comparisonChart" style="height: 400px;"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const data = {{ data|safe }};
+    const traces = data.map(series => ({
+        x: series.days,
+        y: series.values,
+        name: series.temperature,
+        mode: 'lines+markers',
+        type: 'scatter'
+    }));
+
+    const layout = {
+        title: '{{ feature_type.name }} Comparison',
+        xaxis: {
+            title: 'Storage Days'
+        },
+        yaxis: {
+            title: 'Value'
+        },
+        hovermode: 'closest'
+    };
+
+    Plotly.newPlot('comparisonChart', traces, layout);
+});
+</script>
+{% endblock %}

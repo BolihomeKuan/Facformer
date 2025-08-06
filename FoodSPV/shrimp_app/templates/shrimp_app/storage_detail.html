@@ -1,0 +1,185 @@
+{% extends 'shrimp_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'shrimp_app:index' %}">Home</a></li>
+            <li class="breadcrumb-item active">Storage at {{ storage.temperature }}°C</li>
+        </ol>
+    </nav>
+
+    <div class="card mb-4">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">Feature Data</h3>
+            <div class="btn-group">
+                <a href="{% url 'shrimp_app:add_feature_data' storage.id %}" class="btn btn-light text-danger">
+                    <i class="bi bi-plus-circle me-2"></i>Add Single Data
+                </a>
+                <a href="{% url 'shrimp_app:bulk_add_feature_data' storage.id %}" class="btn btn-outline-light">
+                    <i class="bi bi-plus-circle me-2"></i>Bulk Add Data
+                </a>
+                <button class="btn btn-outline-light" onclick="exportData()">
+                    <i class="bi bi-download me-2"></i>Export Data
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Filter Form -->
+            <form method="get" class="mb-4" id="filterForm">
+                <div class="row align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">Filter by Feature Type</label>
+                        <select name="feature_type" class="form-select" onchange="this.form.submit()">
+                            <option value="">All Feature Types</option>
+                            {% for feature in feature_types %}
+                            <option value="{{ feature.id }}" 
+                                {% if selected_feature == feature.id|stringformat:"s" %}selected{% endif %}>
+                                {{ feature.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Data Table -->
+            <div class="table-responsive">
+                <table class="table table-hover" id="featureTable">
+                    <thead>
+                        <tr>
+                            <th>Feature Type</th>
+                            <th>Day</th>
+                            <th>Value</th>
+                            <th>Notes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in feature_data %}
+                        <tr>
+                            <td>{{ item.feature_type.name }}</td>
+                            <td>{{ item.measurement_day }}</td>
+                            <td>{{ item.value|floatformat:2 }}</td>
+                            <td>{{ item.notes|default:'-' }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'shrimp_app:edit_feature_data' item.id %}" 
+                                   class="btn btn-danger btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" 
+                                        class="btn btn-outline-danger btn-sm"
+                                        onclick="confirmDelete('{{ item.id }}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-danger {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-danger:hover {
+    background-color: #CC3333;
+    border-color: #CC3333;
+}
+
+.btn-outline-danger {
+    color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-outline-danger:hover {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+    color: white;
+}
+
+.card-header.bg-danger {
+    background-color: #FF4D4D !important;
+}
+
+.text-danger {
+    color: #FF4D4D !important;
+}
+
+.breadcrumb a {
+    color: #FF4D4D;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: #CC3333;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(255, 77, 77, 0.05);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #FF4D4D;
+    box-shadow: 0 0 0 0.2rem rgba(255, 77, 77, 0.25);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    $('#featureTable').DataTable({
+        "pageLength": 10,
+        "order": [[1, "asc"]],
+        "language": {
+            "search": "Search:",
+            "lengthMenu": "Show _MENU_ entries per page",
+            "info": "Showing _START_ to _END_ of _TOTAL_ entries"
+        }
+    });
+});
+
+function confirmDelete(featureId) {
+    if (confirm('Are you sure you want to delete this measurement?')) {
+        fetch(`/shrimp/feature/${featureId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            }
+        });
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function exportData() {
+    const filterForm = document.getElementById('filterForm');
+    const featureType = filterForm.querySelector('select[name="feature_type"]').value;
+    const exportUrl = `{% url 'shrimp_app:export_feature_data' storage.id %}?feature_type=${featureType}`;
+    window.location.href = exportUrl;
+}
+</script>
+{% endblock %}

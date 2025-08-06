@@ -1,0 +1,129 @@
+{% extends 'shrimp_app/base.html' %}
+
+{% block title %}Import Data{% endblock %}
+
+{% block extra_css %}
+<style>
+    .custom-file-upload {
+        display: inline-block;
+        padding: 6px 12px;
+        cursor: pointer;
+        background-color: #f8f9fa;
+        border: 1px solid #FF4D4D;
+        border-radius: 4px;
+        color: #FF4D4D;
+    }
+    
+    .custom-file-upload:hover {
+        background-color: #FFE6E6;
+    }
+    
+    .hidden-file-input {
+        display: none;
+    }
+    
+    .file-name-display {
+        margin-left: 10px;
+        color: #6c757d;
+    }
+
+    .btn-danger {
+        background-color: #FF4D4D;
+        border-color: #FF4D4D;
+    }
+
+    .btn-danger:hover {
+        background-color: #CC3333;
+        border-color: #CC3333;
+    }
+
+    .btn-outline-danger {
+        color: #FF4D4D;
+        border-color: #FF4D4D;
+    }
+
+    .btn-outline-danger:hover {
+        background-color: #FF4D4D;
+        border-color: #FF4D4D;
+        color: white;
+    }
+
+    .card-header.bg-danger {
+        background-color: #FF4D4D !important;
+    }
+
+    .form-control:focus {
+        border-color: #FF4D4D;
+        box-shadow: 0 0 0 0.2rem rgba(255, 77, 77, 0.25);
+    }
+
+    .form-check-input:checked {
+        background-color: #FF4D4D;
+        border-color: #FF4D4D;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="text-danger">Import Data</h1>
+    <p class="text-muted">Import data from Excel or CSV files</p>
+
+    <div class="card mb-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">Import Instructions</h5>
+        </div>
+        <div class="card-body">
+            <ul>
+                <li>File must be in Excel (.xlsx) or CSV format</li>
+                <li>First row should contain column headers</li>
+                <li>Required columns: Species, Temperature, Feature, Value, Day</li>
+                <li>Optional columns: Scientific Name, Notes</li>
+            </ul>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Data File</label>
+            <div>
+                <label class="custom-file-upload">
+                    <input type="file" class="hidden-file-input" id="dataFile" name="data_file" accept=".xlsx,.csv" required>
+                    <i class="bi bi-upload"></i> Choose File
+                </label>
+                <span class="file-name-display" id="fileNameDisplay">No file chosen</span>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="sheetName" class="form-label">Sheet Name (Excel only)</label>
+            <input type="text" class="form-control" id="sheetName" name="sheet_name" value="Sheet1">
+            <div class="form-text">Leave as "Sheet1" if unsure</div>
+        </div>
+
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="skipErrors" name="skip_errors">
+            <label class="form-check-label" for="skipErrors">Skip rows with errors</label>
+        </div>
+
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-upload me-2"></i>Import Data
+            </button>
+            <a href="{% url 'shrimp_app:index' %}" class="btn btn-outline-danger">
+                <i class="bi bi-x-circle me-2"></i>Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('dataFile').addEventListener('change', function(e) {
+        var fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
+        document.getElementById('fileNameDisplay').textContent = fileName;
+    });
+</script>
+{% endblock %} 

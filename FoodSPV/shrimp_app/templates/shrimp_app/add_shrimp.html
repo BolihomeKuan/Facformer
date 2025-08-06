@@ -1,0 +1,153 @@
+{% extends 'shrimp_app/base.html' %}
+
+{% block title %}Add New Shrimp Species{% endblock %}
+
+{% block header %}
+<div class="page-header">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'shrimp_app:index' %}">Home</a></li>
+                <li class="breadcrumb-item active">Add Shrimp Species</li>
+            </ol>
+        </nav>
+        <h1 class="display-5 text-danger">Add New Shrimp Species</h1>
+        <p class="lead">Enter details for a new shrimp species</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Shrimp Species Details</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_name" class="form-label">Name</label>
+                            <input type="text" name="name" class="form-control" id="id_name" required>
+                            <div class="invalid-feedback">
+                                Please provide a name.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_scientific_name" class="form-label">Scientific Name</label>
+                            <input type="text" name="scientific_name" class="form-control" id="id_scientific_name">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Description</label>
+                            <textarea name="description" class="form-control" id="id_description" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_image" class="form-label">Image</label>
+                            <div class="custom-file">
+                                <label class="custom-file-upload">
+                                    <input type="file" name="image" class="form-control hidden-file-input" id="id_image" accept="image/*">
+                                    <i class="bi bi-upload me-2"></i>Select File
+                                </label>
+                                <span class="file-name-display" id="fileNameDisplay">No file selected</span>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-plus-circle me-2"></i>Add Shrimp Species
+                            </button>
+                            <a href="{% url 'shrimp_app:index' %}" class="btn btn-outline-danger">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-danger {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-danger:hover {
+    background-color: #CC3333;
+    border-color: #CC3333;
+}
+
+.btn-outline-danger {
+    color: #FF4D4D;
+    border-color: #FF4D4D;
+}
+
+.btn-outline-danger:hover {
+    background-color: #FF4D4D;
+    border-color: #FF4D4D;
+    color: white;
+}
+
+.card-header.bg-danger {
+    background-color: #FF4D4D !important;
+}
+
+.form-control:focus {
+    border-color: #FF4D4D;
+    box-shadow: 0 0 0 0.2rem rgba(255, 77, 77, 0.25);
+}
+
+.custom-file-upload {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    background-color: #f8f9fa;
+    border: 1px solid #dde1e3;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.custom-file-upload:hover {
+    background-color: #e9ecef;
+}
+
+.hidden-file-input {
+    display: none;
+}
+
+.file-name-display {
+    margin-left: 1rem;
+    color: #6c757d;
+}
+</style>
+
+<script>
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+})()
+
+document.querySelector('.hidden-file-input').addEventListener('change', function(e) {
+    var fileName = e.target.files[0] ? e.target.files[0].name : 'No file selected';
+    document.getElementById('fileNameDisplay').textContent = fileName;
+});
+</script>
+{% endblock %} 

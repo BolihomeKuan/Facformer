@@ -1,0 +1,181 @@
+{% extends 'main_app/base.html' %}
+
+{% block title %}Dashboard - Aquatic Storage Life{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- 总览统计 -->
+    <div class="row mb-5">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-database display-4 text-primary"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="number">{{ total_species }}</div>
+                    <div class="label">Total Species</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-thermometer display-4 text-success"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="number">{{ total_conditions }}</div>
+                    <div class="label">Storage Conditions</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-graph-up display-4 text-info"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="number">{{ total_measurements }}</div>
+                    <div class="label">Data Points</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-clock-history display-4 text-warning"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="number">{{ total_features }}</div>
+                    <div class="label">Feature Types</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近更新 -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Updates</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Database</th>
+                                    <th>Species</th>
+                                    <th>Update Time</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for update in recent_updates %}
+                                <tr>
+                                    <td>{{ update.database }}</td>
+                                    <td>{{ update.species }}</td>
+                                    <td>{{ update.time }}</td>
+                                    <td>
+                                        <a href="{{ update.url }}" class="btn btn-sm btn-primary">
+                                            View Details
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据分布图表 -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Species Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="speciesChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Data Points by Database</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="dataPointsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 物种分布图表
+    const speciesCtx = document.getElementById('speciesChart').getContext('2d');
+    new Chart(speciesCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Fish', 'Shrimp', 'Shellfish'],
+            datasets: [{
+                data: [
+                    {{ fish_species_count }},
+                    {{ shrimp_species_count }},
+                    {{ shellfish_species_count }}
+                ],
+                backgroundColor: [
+                    'rgba(52, 152, 219, 0.8)',
+                    'rgba(46, 204, 113, 0.8)',
+                    'rgba(155, 89, 182, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // 数据点分布图表
+    const dataPointsCtx = document.getElementById('dataPointsChart').getContext('2d');
+    new Chart(dataPointsCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Fish', 'Shrimp', 'Shellfish'],
+            datasets: [{
+                label: 'Number of Data Points',
+                data: [
+                    {{ fish_data_points }},
+                    {{ shrimp_data_points }},
+                    {{ shellfish_data_points }}
+                ],
+                backgroundColor: [
+                    'rgba(52, 152, 219, 0.8)',
+                    'rgba(46, 204, 113, 0.8)',
+                    'rgba(155, 89, 182, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

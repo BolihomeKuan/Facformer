@@ -1,0 +1,107 @@
+{% extends 'fish_app/base.html' %}
+
+{% block extra_css %}
+<!-- 添加 flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .edit-container {
+        max-width: 800px;
+        margin: 2rem auto;
+    }
+
+    .form-card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 2rem;
+    }
+
+    .flatpickr-input {
+        background-color: white !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edit-container">
+    <div class="form-card">
+        <h2>Edit Source Information</h2>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="source_code" class="form-label">Source Code</label>
+                <input type="text" class="form-control" id="source_code" name="source_code" value="{{ source.source_code }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="source_type" class="form-label">Source Type</label>
+                <select class="form-select" id="source_type" name="source_type" required>
+                    <option value="market" {% if source.source_type == 'market' %}selected{% endif %}>Market</option>
+                    <option value="farm" {% if source.source_type == 'farm' %}selected{% endif %}>Farm</option>
+                    <option value="wild" {% if source.source_type == 'wild' %}selected{% endif %}>Wild Catch</option>
+                    <option value="other" {% if source.source_type == 'other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="source_name" class="form-label">Source Name</label>
+                <input type="text" class="form-control" id="source_name" name="source_name" value="{{ source.source_name }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="source_date" class="form-label">Source Date</label>
+                <input type="text" 
+                       class="form-control" 
+                       id="source_date" 
+                       name="source_date" 
+                       value="{{ source.source_date|date:'Y-m-d' }}"
+                       placeholder="Select Date"
+                       data-input>
+            </div>
+
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="4">{{ source.description }}</textarea>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save me-2"></i>Save Changes
+                </button>
+                <a href="{% url 'fish_app:fish_source_detail' source.fish_species.id source.id %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle me-2"></i>Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- 添加 flatpickr JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        flatpickr("#source_date", {
+            dateFormat: "Y-m-d",
+            locale: {
+                firstDayOfWeek: 1,
+                weekdays: {
+                    shorthand: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                    longhand: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+                },
+                months: {
+                    shorthand: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    longhand: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+                }
+            },
+            allowInput: true,
+            altInput: true,
+            altFormat: "F j, Y",
+            defaultDate: "{{ source.source_date|date:'Y-m-d' }}"
+        });
+    });
+</script>
+{% endblock %}

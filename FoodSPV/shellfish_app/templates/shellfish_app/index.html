@@ -1,0 +1,80 @@
+{% extends 'shellfish_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Shellfish Species Database</h1>
+        <div class="btn-group">
+            <a href="?view=card" class="btn btn-outline-primary {% if view_type == 'card' %}active{% endif %}">
+                <i class="bi bi-grid"></i> Card View
+            </a>
+            <a href="?view=table" class="btn btn-outline-primary {% if view_type == 'table' %}active{% endif %}">
+                <i class="bi bi-table"></i> Table View
+            </a>
+        </div>
+    </div>
+
+    {% if view_type == 'card' %}
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {% for shellfish in shellfish_species %}
+            <div class="col">
+                <div class="card h-100 hover-shadow">
+                    {% if shellfish.image %}
+                    <img src="{{ shellfish.image.url }}" class="card-img-top img-fluid" 
+                         alt="{{ shellfish.name }}" style="object-fit: cover; height: 200px;">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ shellfish.name }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{ shellfish.scientific_name }}</h6>
+                        <p class="card-text">{{ shellfish.description|truncatewords:30 }}</p>
+                        <a href="{% url 'shellfish_app:shellfish_detail' shellfish.id %}" class="btn btn-primary">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Scientific Name</th>
+                                <th>Description</th>
+                                <th>Image</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shellfish in shellfish_species %}
+                            <tr>
+                                <td>{{ shellfish.name }}</td>
+                                <td>{{ shellfish.scientific_name }}</td>
+                                <td>{{ shellfish.description|truncatewords:20 }}</td>
+                                <td>
+                                    {% if shellfish.image %}
+                                    <img src="{{ shellfish.image.url }}" alt="{{ shellfish.name }}" 
+                                         style="max-height: 50px;">
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'shellfish_app:shellfish_detail' shellfish.id %}" 
+                                       class="btn btn-sm btn-primary">
+                                        View Details
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

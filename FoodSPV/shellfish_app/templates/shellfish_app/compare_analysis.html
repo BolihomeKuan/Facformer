@@ -1,0 +1,136 @@
+{% extends 'shellfish_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>Comparative Analysis</h2>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Shellfish Species</label>
+                    <select name="species" class="form-select" multiple>
+                        {% for species in shellfish_species %}
+                        <option value="{{ species.id }}" 
+                                {% if species.id|stringformat:"s" in request.GET.getlist.species %}selected{% endif %}>
+                            {{ species.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">Feature Type</label>
+                    <select name="feature_type" class="form-select">
+                        <option value="">Select Feature Type</option>
+                        {% for ft in feature_types %}
+                        <option value="{{ ft.id }}" {% if selected_feature.id == ft.id %}selected{% endif %}>
+                            {{ ft.name }} ({{ ft.unit }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label">Min Temperature (°C)</label>
+                    <input type="number" name="min_temp" class="form-control" 
+                           step="0.1" value="{{ request.GET.min_temp }}">
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label">Max Temperature (°C)</label>
+                    <input type="number" name="max_temp" class="form-control" 
+                           step="0.1" value="{{ request.GET.max_temp }}">
+                </div>
+                
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Compare</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if comparison_data %}
+    <div class="row">
+        <!-- 箱线图 -->
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Box Plot Comparison - {{ selected_feature.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="boxPlotChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计数据表格 -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Statistical Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Storage Condition</th>
+                                    <th>Mean</th>
+                                    <th>Median</th>
+                                    <th>Std Dev</th>
+                                    <th>Min</th>
+                                    <th>Max</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in comparison_data %}
+                                <tr>
+                                    <td>{{ item.storage.shellfish_species.name }} 
+                                        ({{ item.storage.temperature }}°C)</td>
+                                    <td>{{ item.stats.mean|floatformat:2 }}</td>
+                                    <td>{{ item.stats.median|floatformat:2 }}</td>
+                                    <td>{{ item.stats.std|floatformat:2 }}</td>
+                                    <td>{{ item.stats.min|floatformat:2 }}</td>
+                                    <td>{{ item.stats.max|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js 初始化脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-box-and-violin-plot@3.0.0/build/index.min.js"></script>
+    <script>
+        const ctx = document.getElementById('boxPlotChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'boxplot',
+            data: {
+                labels: {{ box_plot_data|safe }}.map(d => d.label),
+                datasets: [{
+                    data: {{ box_plot_data|safe }}.map(d => d.data),
+                    backgroundColor: {{ box_plot_data|safe }}.map(d => d.backgroundColor)
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        title: {
+                            display: true,
+                            text: '{{ selected_feature.name }} ({{ selected_feature.unit }})'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+    {% endif %}
+</div>
+{% endblock %} 

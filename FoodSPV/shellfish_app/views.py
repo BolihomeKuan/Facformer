@@ -1,0 +1,1011 @@
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST, require_http_methods
+from django.contrib import messages
+from .models import Shellfish, StorageCondition, FeatureType, FeatureData
+from .forms import ShellfishForm, StorageConditionForm, FeatureDataForm, DataImportForm
+import numpy as np
+from scipy import stats
+import pandas as pd
+from django import forms
+import csv
+import json
+from django.http import HttpResponse, JsonResponse
+from datetime import datetime
+from .models import Shellfish, ShellfishSource, StorageCondition, FeatureType, FeatureData
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from .forms import ShellfishForm, BulkFeatureDataForm, StorageConditionForm, FeatureDataForm, DataImportForm, ShellfishSourceForm
+
+
+@require_http_methods(["GET"])
+def index(request):
+    """Shellfish database homepage with both card and table views"""
+    shellfish_species = Shellfish.objects.all().order_by('name')
+    view_type = request.GET.get('view', 'card')  # Default to card view
+    
+    context = {
+        'shellfish_species': shellfish_species,
+        'view_type': view_type,
+        'storage_conditions_count': StorageCondition.objects.count(),
+        'feature_data_count': FeatureData.objects.count(),
+    }
+    return render(request, 'shellfish_app/index.html', context)
+
+@require_http_methods(["GET"])
+@login_required
+def dashboard(request):
+    """显示仪表板"""
+    # 保留原有的统计数据
+    total_species = Shellfish.objects.count()
+    total_conditions = StorageCondition.objects.count()
+    total_measurements = FeatureData.objects.count()
+    feature_types_count = FeatureType.objects.count()
+
+    # 添加贝类统计数据
+    shellfish_species = Shellfish.objects.all()
+    shellfish_labels = [shellfish.name for shellfish in shellfish_species]
+    shellfish_measurements = [FeatureData.objects.filter(
+        storage_condition__shellfish_species=shellfish).count() 
+        for shellfish in shellfish_species
+    ]
+    
+    # 保留原有的温度和特征类型统计
+    temp_data = StorageCondition.objects.values_list('temperature', flat=True)
+    temp_labels = sorted(set(temp_data))
+    temp_counts = [list(temp_data).count(temp) for temp in temp_labels]
+
+    feature_types = FeatureType.objects.all()
+    feature_labels = [ft.name for ft in feature_types]
+    feature_data = [FeatureData.objects.filter(feature_type=ft).count() 
+                   for ft in feature_types]
+
+    context = {
+        'total_species': total_species,
+        'total_conditions': total_conditions,
+        'total_measurements': total_measurements,
+        'feature_types_count': feature_types_count,
+        'temp_labels': temp_labels,
+        'temp_data': temp_counts,
+        'feature_labels': feature_labels,
+        'feature_data': feature_data,
+        'shellfish_labels': shellfish_labels,
+        'shellfish_data': shellfish_measurements,
+    }
+    return render(request, 'shellfish_app/dashboard.html', context)
+
+
+@require_http_methods(["GET"])
+def statistical_analysis(request):
+    """Statistical analysis view"""
+    feature_types = FeatureType.objects.all()
+    temperatures = StorageCondition.objects.values_list('temperature', flat=True).distinct()
+    shellfish_list = Shellfish.objects.prefetch_related('storage_conditions').all()
+    
+    selected_feature = request.GET.get('feature_type')
+    selected_temp = request.GET.get('temperature')
+    
+    stats = None
+    if selected_feature:
+        query = FeatureData.objects.filter(feature_type_id=selected_feature)
+        if selected_temp:
+            query = query.filter(storage_condition__temperature=selected_temp)
+        
+        values = list(query.values_list('value', flat=True))
+        if values:
+            stats = {
+                'mean': np.mean(values),
+                'median': np.median(values),
+                'std': np.std(values),
+                'min': min(values),
+                'max': max(values)
+            }
+    
+    context = {
+        'feature_types': feature_types,
+        'temperatures': temperatures,
+        'shellfish_list': shellfish_list,
+        'selected_feature': selected_feature,
+        'selected_temp': selected_temp,
+        'stats': stats
+    }
+    return render(request, 'shellfish_app/statistical_analysis.html', context)
+
+@require_http_methods(["GET"])
+def comparison_result(request):
+    """Comparison result view"""
+    feature_type_id = request.GET.get('feature_type')
+    storage_ids = request.GET.getlist('storage_conditions[]')
+    
+    if not feature_type_id or len(storage_ids) < 2:
+        messages.error(request, 'Please select a feature type and at least 2 storage conditions.')
+        return redirect('shellfish_app:statistical_analysis')
+    
+    feature_type = get_object_or_404(FeatureType, id=feature_type_id)
+    storage_conditions = StorageCondition.objects.filter(id__in=storage_ids)
+    
+    # 准备数据
+    data = []
+    for storage in storage_conditions:
+        measurements = FeatureData.objects.filter(
+            storage_condition=storage,
+            feature_type=feature_type
+        ).order_by('measurement_day')
+        
+        if measurements:
+            data.append({
+                'temperature': f'{storage.temperature}°C',
+                'days': [m.measurement_day for m in measurements],
+                'values': [m.value for m in measurements]
+            })
+    
+    context = {
+        'feature_type': feature_type,
+        'data': json.dumps(data)  # 将数据转换为JSON字符串
+    }
+    return render(request, 'shellfish_app/comparison_result.html', context)
+
+@login_required
+def advanced_search(request):
+    shellfish_list = Shellfish.objects.all()
+    feature_types = FeatureType.objects.all()
+    
+    context = {
+        'shellfish_list': shellfish_list,
+        'feature_types': feature_types,
+    }
+    return render(request, 'shellfish_app/advanced_search.html', context)
+
+
+def calculate_trend(days, values):
+    """计算趋势的更稳健方法"""
+    try:
+        # 使用 Theil-Sen 估计器，对异常值更稳健
+        slope, intercept, _, _ = stats.theilslopes(values, days)
+        
+        if abs(slope) < 1e-10:  # 接近于零
+            return "Stable", slope
+        else:
+            return "Increasing" if slope > 0 else "Decreasing", slope
+    except:
+        # 如果数据点太少或有其他问题，使用简单的首尾比较
+        if len(values) >= 2:
+            trend = "Increasing" if values[-1] > values[0] else "Decreasing"
+            slope = (values[-1] - values[0]) / (days[-1] - days[0])
+            return trend, slope
+        return "Insufficient data", 0
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def compare_data(request):
+    context = {
+        'feature_types': FeatureType.objects.all(),
+        'storage_conditions': StorageCondition.objects.all()
+    }
+    
+    if request.method == 'POST':
+        analysis_type = request.POST.get('analysis_type')
+        
+        if analysis_type == 'single':
+            feature_type_id = request.POST.get('feature_type')
+            storage_id = request.POST.get('storage_id')
+            
+            # 获取单系列数据
+            feature_data = FeatureData.objects.filter(
+                storage_condition_id=storage_id,
+                feature_type_id=feature_type_id
+            ).order_by('measurement_day')
+            
+            if feature_data.exists():
+                values = np.array([data.value for data in feature_data])
+                days = np.array([data.measurement_day for data in feature_data])
+                
+                # 确保数据不为空
+                if len(values) > 0:
+                    # 计算变化率
+                    changes = np.diff(values)
+                    avg_change_rate = np.mean(changes) if len(changes) > 0 else 0
+                    max_change = np.max(np.abs(changes)) if len(changes) > 0 else 0
+                    
+                    # 计算趋势
+                    trend, slope = calculate_trend(days, values)
+                    
+                    # 准备单系列分析数据
+                    single_analysis = {
+                        'label': f"{feature_data[0].storage_condition.shellfish_species.name} ({feature_data[0].storage_condition.temperature}°C)",
+                        'days': days.tolist(),
+                        'values': values.tolist(),
+                        'mean': float(np.mean(values)),
+                        'std': float(np.std(values)),
+                        'median': float(np.median(values)),
+                        'q1': float(np.percentile(values, 25)),
+                        'q3': float(np.percentile(values, 75)),
+                        'min': float(np.min(values)),
+                        'max': float(np.max(values)),
+                        'trend': trend,
+                        'slope': float(slope),
+                        'avg_change_rate': float(avg_change_rate),
+                        'max_change': float(max_change),
+                        'changes': changes.tolist() if len(changes) > 0 else [],
+                    }
+                    
+                    context.update({
+                        'single_analysis': single_analysis,
+                        'feature_type': FeatureType.objects.get(id=feature_type_id).name
+                    })
+        
+        elif analysis_type == 'compare':
+            feature_type_id = request.POST.get('feature_type')
+            storage_ids = request.POST.getlist('storage_ids')
+            
+            # 获取比较数据
+            feature_data = FeatureData.objects.filter(
+                storage_condition_id__in=storage_ids,
+                feature_type_id=feature_type_id
+            ).order_by('storage_condition', 'measurement_day')
+            
+            # 初始化数据结构
+            comparison_data = {}
+            
+            # 处理数据用于图表显示
+            for data in feature_data:
+                key = f"{data.storage_condition.shellfish_species.name} ({data.storage_condition.temperature}°C)"
+                if key not in comparison_data:
+                    comparison_data[key] = {'days': [], 'values': []}
+                comparison_data[key]['days'].append(data.measurement_day)
+                comparison_data[key]['values'].append(data.value)
+
+            if comparison_data:
+                # 准备统计分析结果
+                analysis_results = []
+                for condition, data in comparison_data.items():
+                    values = np.array(data['values'])
+                    mean = np.mean(values)
+                    cv = (np.std(values) / mean * 100) if mean != 0 else 0
+                    
+                    analysis_results.append({
+                        'condition': condition,
+                        'mean': mean,
+                        'cv': cv,
+                        'values': values
+                    })
+
+                # 找出最佳条件
+                best_condition = max(analysis_results, key=lambda x: x['mean'])
+                most_stable = min(analysis_results, key=lambda x: x['cv'])
+
+                # ANOVA 分析
+                anova_result = None
+                if len(comparison_data) >= 2:
+                    try:
+                        groups = [result['values'] for result in analysis_results]
+                        f_stat, p_value = stats.f_oneway(*groups)
+                        anova_result = {
+                            'f_stat': f_stat,
+                            'p_value': p_value,
+                            'significant': p_value < 0.05
+                        }
+                    except:
+                        anova_result = {'error': 'Could not perform ANOVA analysis'}
+
+                # 准备图表数据
+                chart_datasets = []
+                colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
+                for i, (condition, data) in enumerate(comparison_data.items()):
+                    chart_datasets.append({
+                        'label': condition,
+                        'data': data['values'],
+                        'borderColor': colors[i % len(colors)],
+                        'fill': False
+                    })
+
+                # 准备柱状图数据
+                bar_labels = []
+                bar_values = []
+                for result in analysis_results:
+                    bar_labels.append(result['condition'])
+                    bar_values.append(float(result['mean']))  # 确保数值可以被JSON序列化
+
+                context.update({
+                    'comparison_data': comparison_data,
+                    'analysis_results': analysis_results,
+                    'best_condition': best_condition['condition'],
+                    'most_stable_condition': most_stable['condition'],
+                    'anova_result': anova_result,
+                    'chart_datasets': json.dumps(chart_datasets),
+                    'days': json.dumps(list(range(1, max(max(d['days']) for d in comparison_data.values()) + 1))),
+                    'feature_type': FeatureType.objects.get(id=feature_type_id).name,
+                    'bar_labels': json.dumps(bar_labels),
+                    'bar_values': json.dumps(bar_values)
+                })
+    
+    return render(request, 'shellfish_app/compare_data.html', context)
+
+
+@require_http_methods(["POST"])
+@login_required
+def compare_analysis(request):
+    """对比分析"""
+    feature_type_id = request.POST.get('feature_type')
+    condition_ids = request.POST.getlist('conditions[]')
+    
+    if not feature_type_id or len(condition_ids) < 2:
+        messages.error(request, 'Please select a feature type and at least two storage conditions for comparison')
+        return redirect('shellfish_app:statistical_analysis')
+        
+    feature_type = get_object_or_404(FeatureType, id=feature_type_id)
+    comparison_data = []
+    comparison_datasets = []
+    comparison_stats_datasets = []
+    colors = [
+        'rgba(75, 192, 192, 0.6)',
+        'rgba(255, 99, 132, 0.6)',
+        'rgba(255, 205, 86, 0.6)',
+        'rgba(54, 162, 235, 0.6)',
+        'rgba(153, 102, 255, 0.6)'
+    ]
+    
+    all_days = set()
+    for condition_id in condition_ids:
+        storage = get_object_or_404(StorageCondition, id=condition_id)
+        data = FeatureData.objects.filter(
+            storage_condition=storage,
+            feature_type=feature_type
+        ).order_by('measurement_day')
+        
+        if data:
+            days = [d.measurement_day for d in data]
+            values = [d.value for d in data]
+            all_days.update(days)
+            
+            comparison_datasets.append({
+                'label': f'{storage.shellfish_species.name} ({storage.temperature}°C)',
+                'data': values,
+                'borderColor': colors[len(comparison_datasets)],
+                'backgroundColor': colors[len(comparison_datasets)],
+                'fill': False
+            })
+            
+            comparison_stats_datasets.append({
+                'label': f'{storage.shellfish_species.name} ({storage.temperature}°C)',
+                'data': [
+                    float(np.mean(values)),
+                    float(np.median(values)),
+                    float(np.std(values))
+                ],
+                'backgroundColor': colors[len(comparison_stats_datasets)]
+            })
+            
+            comparison_data.append({
+                'storage': storage,
+                'data': data
+            })
+    
+    if not comparison_data:
+        messages.error(request, 'No available data for the selected conditions')
+        return redirect('shellfish_app:statistical_analysis')
+    
+    context = {
+        'feature_type': feature_type,
+        'comparison_data': comparison_data,
+        'days': json.dumps(sorted(list(all_days))),
+        'comparison_datasets': json.dumps(comparison_datasets),
+        'comparison_stats_datasets': json.dumps(comparison_stats_datasets)
+    }
+    
+    return render(request, 'shellfish_app/statistical_analysis.html', context)
+
+
+
+
+
+
+
+
+
+
+    
+@require_http_methods(["GET"])
+def shellfish_detail(request, shellfish_id):
+    """Display detailed information for a specific shellfish species"""
+    shellfish = get_object_or_404(Shellfish, id=shellfish_id)
+    sources = shellfish.sources.all().prefetch_related('storage_conditions')
+    
+    context = {
+        'shellfish': shellfish,
+        'sources': sources
+    }
+    return render(request, 'shellfish_app/shellfish_detail.html', context)
+
+@require_http_methods(["GET"])
+def shellfish_list(request):
+    """Display shellfish species in table format"""
+    shellfish_species = Shellfish.objects.all().order_by('name')
+    context = {
+        'shellfish_species': shellfish_species,
+        'storage_conditions_count': StorageCondition.objects.count(),
+        'feature_data_count': FeatureData.objects.count(),
+    }
+    return render(request, 'shellfish_app/shellfish_list.html', context)
+
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def add_shellfish(request):
+    """添加新的贝类"""
+    if request.method == 'POST':
+        form = ShellfishForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Successfully added new shellfish species.')
+            return redirect('shellfish_app:index')
+    else:
+        form = ShellfishForm()
+    context = {'form': form}
+    return render(request, 'shellfish_app/add_shellfish.html', context)
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def edit_shellfish(request, shellfish_id):
+    """编辑贝类信息"""
+    shellfish = get_object_or_404(Shellfish, id=shellfish_id)
+    if request.method == 'POST':
+        form = ShellfishForm(request.POST, request.FILES, instance=shellfish)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Successfully updated shellfish species.')
+            return redirect('shellfish_app:shellfish_detail', shellfish_id=shellfish.id)
+    else:
+        form = ShellfishForm(instance=shellfish)
+    context = {'form': form, 'shellfish': shellfish}
+    return render(request, 'shellfish_app/edit_shellfish.html', context)
+
+@login_required
+def delete_confirm(request, shellfish_id):
+    shellfish = get_object_or_404(Shellfish, pk=shellfish_id)
+    return render(request, 'shellfish_app/delete_confirm.html', {'shellfish': shellfish})
+
+@login_required
+@require_POST
+def delete_shellfish(request, shellfish_id):
+    shellfish = get_object_or_404(Shellfish, pk=shellfish_id)
+    shellfish.delete()
+    return redirect('shellfish_app:shellfish_list')
+
+
+
+
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def add_storage(request, shellfish_id, source_id):
+    """添加储存条件"""
+    shellfish = get_object_or_404(Shellfish, id=shellfish_id)
+    source = get_object_or_404(ShellfishSource, id=source_id)
+    
+    if request.method == 'POST':
+        form = StorageConditionForm(request.POST)
+        if form.is_valid():
+            storage = form.save(commit=False)
+            storage.shellfish_species = shellfish
+            storage.shellfish_source = source
+            storage.save()
+            messages.success(request, 'Successfully added storage condition.')
+            return redirect('shellfish_app:shellfish_source_detail', shellfish_id=shellfish_id, source_id=source_id)
+    else:
+        form = StorageConditionForm()
+    
+    context = {
+        'form': form, 
+        'shellfish': shellfish,
+        'source': source
+    }
+    return render(request, 'shellfish_app/add_storage.html', context)
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def edit_storage(request, storage_id):
+    """编辑储存条件"""
+    storage = get_object_or_404(StorageCondition, id=storage_id)
+    if request.method == 'POST':
+        form = StorageConditionForm(request.POST, instance=storage)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Successfully updated storage condition.')
+            return redirect('shellfish_app:storage_detail', storage_id=storage.id)
+    else:
+        form = StorageConditionForm(instance=storage)
+    context = {'form': form, 'storage': storage}
+    return render(request, 'shellfish_app/edit_storage.html', context)
+
+@require_http_methods(["GET"])
+def storage_detail(request, storage_id):
+    """显示储存条件详情"""
+    storage = get_object_or_404(StorageCondition, id=storage_id)
+    
+    # 获取所有特征类型
+    feature_types = FeatureType.objects.filter(
+        featuredata__storage_condition=storage
+    ).distinct()
+    
+    # 获取选中的特征类型
+    selected_feature = request.GET.get('feature_type')
+    
+    # 基础查询
+    feature_data_query = FeatureData.objects.filter(storage_condition=storage)
+    
+    # 如果选择了特征类型，进行筛选
+    if selected_feature:
+        feature_data_query = feature_data_query.filter(feature_type_id=selected_feature)
+    
+    context = {
+        'storage': storage,
+        'feature_data': feature_data_query,
+        'feature_types': feature_types,
+        'selected_feature': selected_feature
+    }
+    return render(request, 'shellfish_app/storage_detail.html', context)
+
+@require_http_methods(["POST"])
+@login_required
+def delete_storage(request, storage_id):
+    """删除储存条件"""
+    storage = get_object_or_404(StorageCondition, id=storage_id)
+    shellfish_id = storage.shellfish_species.id
+    storage.delete()
+    messages.success(request, 'Successfully deleted storage condition.')
+    return redirect('shellfish_app:shellfish_detail', shellfish_id=shellfish_id)
+
+
+
+
+
+
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def add_feature_data(request, storage_id):
+    """添加特征数据"""
+    storage = get_object_or_404(StorageCondition, id=storage_id)
+    if request.method == 'POST':
+        form = FeatureDataForm(request.POST)
+        if form.is_valid():
+            feature_data = form.save(commit=False)
+            feature_type_name = form.cleaned_data['feature_type']
+            
+            # 获取或创建特征类型
+            feature_type, created = FeatureType.objects.get_or_create(
+                name=feature_type_name
+            )
+            
+            feature_data.feature_type = feature_type
+            feature_data.storage_condition = storage
+            feature_data.save()
+            
+            messages.success(request, 'Successfully added feature data.')
+            return redirect('shellfish_app:storage_detail', storage_id=storage.id)
+    else:
+        form = FeatureDataForm()
+    
+    context = {'form': form, 'storage': storage}
+    return render(request, 'shellfish_app/add_feature_data.html', context)
+
+@require_http_methods(["POST"])
+@login_required
+def delete_feature_data(request, storage_id, feature_id):
+    """Delete feature data"""
+    feature = get_object_or_404(FeatureData, pk=feature_id)
+    
+    try:
+        feature.delete()
+        messages.success(request, 'Feature data deleted successfully.')
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        messages.error(request, f'Failed to delete feature data: {str(e)}')
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@require_http_methods(["GET"])
+def feature_detail(request, storage_id, feature_id):
+    """显示特征数详情"""
+    storage = get_object_or_404(StorageCondition, id=storage_id)
+    feature_type = get_object_or_404(FeatureType, id=feature_id)
+    feature_data = FeatureData.objects.filter(
+        storage_condition=storage,
+        feature_type=feature_type
+    ).order_by('measurement_day')
+    
+    context = {
+        'storage': storage,
+        'feature_type': feature_type,
+        'feature_data': feature_data
+    }
+    return render(request, 'shellfish_app/feature_detail.html', context)
+
+
+@login_required
+def edit_feature_data(request, storage_id, data_id):
+    """Edit feature data"""
+    feature_data = get_object_or_404(FeatureData, id=data_id)
+    storage = feature_data.storage_condition
+
+    if request.method == 'POST':
+        form = FeatureDataForm(request.POST, instance=feature_data)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Successfully updated feature data.')
+            return redirect('shellfish_app:storage_detail', storage_id=storage.id)
+    else:
+        form = FeatureDataForm(instance=feature_data)
+
+    context = {
+        'form': form,
+        'feature_data': feature_data,
+        'storage': storage
+    }
+    return render(request, 'shellfish_app/edit_feature_data.html', context)
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def bulk_add_feature_data(request, storage_id):
+    """Bulk add feature data"""
+    storage = get_object_or_404(StorageCondition, id=storage_id)
+    
+    if request.method == 'POST':
+        bulk_data = request.POST.get('bulk_data', '').strip()
+        if not bulk_data:
+            messages.error(request, 'Please enter some data.')
+            return redirect('shellfish_app:bulk_add_feature_data', storage_id=storage_id)
+        
+        success_count = 0
+        error_messages = []
+        
+        # 处理文本数据
+        lines = bulk_data.split('\n')
+        for line in lines:
+            parts = line.strip().split(None, 3)  # 分割成最多4部分
+            if len(parts) < 3:
+                error_messages.append(f'Invalid line format: {line}')
+                continue
+                
+            feature_type_name = parts[0]
+            try:
+                measurement_day = int(parts[1])
+                value = float(parts[2])
+                notes = parts[3] if len(parts) > 3 else ''
+                
+                # 获取或创建特征类型
+                feature_type, _ = FeatureType.objects.get_or_create(
+                    name=feature_type_name
+                )
+                
+                # 创建特征数据
+                FeatureData.objects.create(
+                    storage_condition=storage,
+                    feature_type=feature_type,
+                    measurement_day=measurement_day,
+                    value=value,
+                    notes=notes
+                )
+                success_count += 1
+            except ValueError as e:
+                error_messages.append(f'Error in line: {line} - {str(e)}')
+        
+        if success_count > 0:
+            messages.success(request, f'Successfully added {success_count} measurements.')
+        if error_messages:
+            messages.warning(request, 'Some entries had errors: ' + '; '.join(error_messages))
+        return redirect('shellfish_app:storage_detail', storage_id=storage.id)
+    
+    context = {
+        'storage': storage
+    }
+    return render(request, 'shellfish_app/bulk_add_feature_data.html', context)
+
+
+@require_http_methods(["GET"])
+def export_feature_data(request, storage_id):
+    """Export selected feature data to CSV"""
+    storage = get_object_or_404(StorageCondition, id=storage_id)
+    selected_feature = request.GET.get('feature_type')
+    
+    # Create the HttpResponse object with CSV header
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="feature_data_{storage.id}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'Shellfish Name',
+        'Scientific Name',
+        'Feature Type',
+        'Day',
+        'Value',
+        'Unit',
+        'Temperature',
+        'Notes'
+    ])
+    
+    # Base query
+    feature_data_query = FeatureData.objects.filter(storage_condition=storage)
+    
+    # Apply feature type filter if selected
+    if selected_feature:
+        feature_data_query = feature_data_query.filter(feature_type_id=selected_feature)
+    
+    # Write data rows
+    for data in feature_data_query:
+        writer.writerow([
+            storage.shellfish_species.name,
+            storage.shellfish_species.scientific_name,
+            data.feature_type.name,
+            data.measurement_day,
+            data.value,
+            data.feature_type.unit,
+            storage.temperature,  # 移除℃符号
+            data.notes
+        ])
+    
+    return response
+
+
+
+
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def import_data(request):
+    """导入数据"""
+    if request.method == 'POST':
+        form = DataImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                file = request.FILES['file']
+                if file.name.endswith('.csv'):
+                    df = pd.read_csv(file)
+                else:
+                    df = pd.read_excel(file, sheet_name=form.cleaned_data['sheet_name'])
+                
+                for _, row in df.iterrows():
+                    shellfish, _ = Shellfish.objects.get_or_create(
+                        name=row['Shellfish Species'],
+                        defaults={
+                            'scientific_name': row.get('Scientific Name', ''),
+                            'description': row.get('Description', '')
+                        }
+                    )
+                    
+                    storage, _ = StorageCondition.objects.get_or_create(
+                        shellfish_species=shellfish,
+                        temperature=row['Temperature'],
+                        defaults={
+                            'storage_time': row['Storage Time'],
+                            'notes': row.get('Notes', '')
+                        }
+                    )
+                    
+                    feature_type, _ = FeatureType.objects.get_or_create(
+                        name=row['Feature'],
+                        defaults={
+                            'unit': row.get('Unit', ''),
+                            'description': row.get('Feature Description', '')
+                        }
+                    )
+                    
+                    FeatureData.objects.create(
+                        storage_condition=storage,
+                        feature_type=feature_type,
+                        value=row['Value'],
+                        measurement_day=row['Day']
+                    )
+                
+                messages.success(request, 'Data imported successfully!')
+                return redirect('shellfish_app:dashboard')
+            except Exception as e:
+                messages.error(request, f'Error importing data: {str(e)}')
+    else:
+        form = DataImportForm()
+    
+    return render(request, 'shellfish_app/import_data.html', {'form': form})
+
+
+
+
+
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def bulk_edit(request):
+    """批量编辑数据"""
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        selected_items = request.POST.getlist('selected_items')
+        
+        if not selected_items:
+            messages.error(request, 'No items selected.')
+            return redirect('shellfish_app:bulk_edit')
+            
+        if action == 'delete':
+            FeatureData.objects.filter(id__in=selected_items).delete()
+            messages.success(request, f'Successfully deleted {len(selected_items)} items.')
+            
+        elif action == 'update':
+            try:
+                adjustment = float(request.POST.get('value_adjustment', 0))
+                items = FeatureData.objects.filter(id__in=selected_items)
+                for item in items:
+                    item.value += adjustment
+                    item.save()
+                messages.success(request, f'Successfully updated {len(selected_items)} items.')
+            except ValueError:
+                messages.error(request, 'Invalid adjustment value.')
+                
+        return redirect('shellfish_app:bulk_edit')
+        
+    feature_data = FeatureData.objects.select_related(
+        'storage_condition__shellfish_species',
+        'feature_type'
+    ).all()
+    
+    context = {
+        'feature_data': feature_data
+    }
+    return render(request, 'shellfish_app/bulk_edit.html', context)
+
+
+
+
+
+@login_required
+def export_data(request, shellfish_id):
+    """导出贝类数据"""
+    shellfish = get_object_or_404(Shellfish, id=shellfish_id)
+    
+    # 创建 HTTP 响应对象，设置文件类型和文件名
+    response = HttpResponse(content_type='text/csv')
+    filename = f"{shellfish.name}_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    # 创建 CSV 写入器
+    writer = csv.writer(response)
+    
+    # 写入表头
+    writer.writerow([
+        'Shellfish Species',
+        'Scientific Name',
+        'Temperature (°C)',
+        'Storage Time (days)',
+        'Feature',
+        'Value',
+        'Unit',
+        'Measurement Day',
+        'Notes'
+    ])
+    
+    # 获取所有相关数据
+    storage_conditions = StorageCondition.objects.filter(shellfish_species=shellfish)
+    for storage in storage_conditions:
+        feature_data = FeatureData.objects.filter(storage_condition=storage)
+        for data in feature_data:
+            writer.writerow([
+                shellfish.name,
+                shellfish.scientific_name,
+                storage.temperature,
+                storage.storage_time,
+                data.feature_type.name,
+                data.value,
+                data.feature_type.unit,
+                data.measurement_day,
+                data.notes
+            ])
+    
+    return response
+
+
+
+
+
+
+
+
+@require_http_methods(["GET"])
+def shellfish_source_detail(request, shellfish_id, source_id):
+    """View for shellfish source details"""
+    shellfish = get_object_or_404(Shellfish, id=shellfish_id)
+    source = get_object_or_404(ShellfishSource, id=source_id)
+    storage_conditions = StorageCondition.objects.filter(
+        shellfish_species=shellfish,
+        shellfish_source=source
+    ).select_related('shellfish_species', 'shellfish_source')
+    
+    storage_with_features = []
+    for storage in storage_conditions:
+        feature_types = FeatureType.objects.filter(
+            featuredata__storage_condition=storage
+        ).distinct()
+        
+        # 获取该储存条件下的所有数据点数量
+        data_points_count = FeatureData.objects.filter(
+            storage_condition=storage
+        ).count()
+        
+        storage_with_features.append({
+            'storage': storage,
+            'feature_types': feature_types,
+            'data_points_count': data_points_count  # 添加数据点数量
+        })
+    
+    context = {
+        'shellfish': shellfish,
+        'source': source,
+        'storage_with_features': storage_with_features
+    }
+    return render(request, 'shellfish_app/shellfish_source_detail.html', context)
+
+
+
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def add_source(request, shellfish_id):
+    """添加贝类来源"""
+    shellfish = get_object_or_404(Shellfish, id=shellfish_id)
+    
+    if request.method == 'POST':
+        form = ShellfishSourceForm(request.POST)
+        if form.is_valid():
+            source = form.save(commit=False)
+            source.shellfish_species = shellfish
+            source.save()
+            messages.success(request, 'Successfully added shellfish source.')
+            return redirect('shellfish_app:shellfish_detail', shellfish_id=shellfish.id)
+    else:
+        form = ShellfishSourceForm()
+        # 移除这行代码，因为shellfish_species字段应该在表单的Meta类中被排除
+        # form.fields['shellfish_species'].widget = forms.HiddenInput()
+    
+    context = {'form': form, 'shellfish': shellfish}
+    return render(request, 'shellfish_app/add_source.html', context)
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def edit_source(request, source_id):
+    """Edit shellfish source"""
+    source = get_object_or_404(ShellfishSource, id=source_id)
+    shellfish_id = source.shellfish_species.id
+    
+    if request.method == 'POST':
+        form = ShellfishSourceForm(request.POST, instance=source)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Successfully updated source.')
+            return redirect('shellfish_app:shellfish_source_detail', 
+                          shellfish_id=shellfish_id, 
+                          source_id=source.id)
+    else:
+        form = ShellfishSourceForm(instance=source)
+    
+    context = {
+        'form': form, 
+        'source': source, 
+        'shellfish': source.shellfish_species
+    }
+    return render(request, 'shellfish_app/edit_source.html', context)
+
+
+@require_http_methods(["POST"])
+@login_required
+def delete_source(request, source_id):
+    """Delete shellfish source"""
+    source = get_object_or_404(ShellfishSource, id=source_id)
+    
+    try:
+        source.delete()
+        messages.success(request, 'Successfully deleted source.')
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        messages.error(request, f'Failed to delete source: {str(e)}')
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+
+
+
