@@ -36,6 +36,6 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-# 添加错误处理视图
+#
 handler404 = 'main_app.views.handler404'
 handler500 = 'main_app.views.handler500'
